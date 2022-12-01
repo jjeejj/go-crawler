@@ -2,14 +2,19 @@ package collect
 
 import (
 	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
-type BrowserFetch struct{}
+type BrowserFetch struct {
+	Timeout time.Duration
+}
 
 func (browser *BrowserFetch) Get(url string) ([]byte, error) {
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: browser.Timeout,
+	}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		log.Errorf("BrowserFetch new request err: %v", err)
