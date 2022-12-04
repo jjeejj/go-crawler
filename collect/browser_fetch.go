@@ -4,16 +4,23 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jjeejj/go-crawler/proxy"
 	log "github.com/sirupsen/logrus"
 )
 
 type BrowserFetch struct {
 	Timeout time.Duration
+	Proxy   proxy.ProxyFunc
 }
 
 func (browser *BrowserFetch) Get(url string) ([]byte, error) {
 	client := &http.Client{
 		Timeout: browser.Timeout,
+	}
+	if browser.Proxy != nil {
+		transport := http.DefaultTransport.(*http.Transport)
+		transport.Proxy = browser.Proxy
+		client.Transport = transport
 	}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

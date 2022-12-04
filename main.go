@@ -2,12 +2,17 @@ package main
 
 import (
 	"github.com/jjeejj/go-crawler/collect"
+	"github.com/jjeejj/go-crawler/proxy"
 	log "github.com/sirupsen/logrus"
 )
 
 func main() {
-	url := "https://book.douban.com/subject/1007305/"
-	var f collect.Fetcher = &collect.BrowserFetch{}
+	url := "https://www.google.com/?client=safari"
+	proxyURLs := []string{"http://127.0.0.1:7890", "http://127.0.0.1:7890"}
+	p, err := proxy.RoundRobinProxy(proxyURLs...)
+	var f collect.Fetcher = &collect.BrowserFetch{
+		Proxy: p,
+	}
 	body, err := f.Get(url)
 	if err != nil {
 		log.Errorf("read content failed err: %v", err)
