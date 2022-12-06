@@ -1,0 +1,1 @@
+{"level":"info","ts":"2022-12-06T16:41:13.063+0800","caller":"testing/testing.go:1446","msg":"log init end"}
