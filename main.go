@@ -1,35 +1,57 @@
 package main
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/jjeejj/go-crawler/collect"
+	"github.com/jjeejj/go-crawler/log"
+	"github.com/jjeejj/go-crawler/parse/douban"
 	"github.com/jjeejj/go-crawler/proxy"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func main() {
-	url := "https://www.google.com/?client=safari"
+	// 初始化日志组建
+	logPlugin := log.NewStdoutPlugin(zapcore.DebugLevel)
+	logger := log.NewLogger(logPlugin)
+	logger.Info("log init end")
 	proxyURLs := []string{"http://127.0.0.1:7890", "http://127.0.0.1:7890"}
 	p, err := proxy.RoundRobinProxy(proxyURLs...)
-	var f collect.Fetcher = &collect.BrowserFetch{
-		Proxy: p,
-	}
-	body, err := f.Get(url)
 	if err != nil {
-		log.Errorf("read content failed err: %v", err)
-		return
+		logger.Error("RoundRobinProxy failed: ", zap.Error(err))
+		panic(err)
 	}
-	log.Infof("body: %v", string(body))
-	// numLinks := strings.Count(string(body), "<a")
-	// log.Infof("home page has %d links", numLinks)
-	// doc, err := htmlquery.Parse(bytes.NewReader(body))
-	// log.Infof("%v:", doc.Data)
-	// if err != nil {
-	// 	log.Errorf("htmlquery.Parse failed err: %v", err)
-	// 	return
-	// }
-	// nodes := htmlquery.Find(doc, `//li[@class="index_wechartcontent__yM1tu"]/span`)
-	// for _, node := range nodes {
-	// 	log.Info(node.FirstChild.Data)
-	// }
+	var f collect.Fetcher = &collect.BrowserFetch{
+		Timeout: time.Second * 3,
+		Proxy:   p,
+	}
+
+	var workList []*collect.Request
+	for i := 0; i <= 100; i += 25 {
+		url := fmt.Sprintf("https://www.douban.com/group/szsh/discussion?start=%d", i)
+		workList = append(workList, &collect.Request{
+			Url:       url,
+			ParseFunc: douban.ParseUrl,
+		})
+	}
+	// 广度优先
+	for len(workList) > 0 {
+		work := workList[0]
+		workList = workList[1:]
+		body, err := f.Get(work)
+		time.Sleep(time.Second)
+		if err != nil {
+			logger.Error("read content failed", zap.Error(err))
+			continue
+		}
+		res := work.ParseFunc(body)
+		logger.Info("res:", zap.Any("pase res", res))
+		for _, item := range res.Items {
+			logger.Info("result", zap.String("get urk:", item.(string)))
+		}
+		workList = append(workList, res.Requests...)
+	}
 
 }

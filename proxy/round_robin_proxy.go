@@ -30,6 +30,6 @@ func RoundRobinProxy(ProxyUrls ...string) (ProxyFunc, error) {
 
 func (rr *roundRobinProxy) GetProxy(pr *http.Request) (*url.URL, error) {
 	index := atomic.AddUint32(&rr.index, 1) - 1
-	u := rr.proxyUrls[index/uint32(len(rr.proxyUrls))]
+	u := rr.proxyUrls[index%uint32(len(rr.proxyUrls))]
 	return u, nil
 }

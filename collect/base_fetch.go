@@ -9,8 +9,8 @@ import (
 type BaseFetch struct {
 }
 
-func (base *BaseFetch) Get(url string) ([]byte, error) {
-	resp, err := http.Get(url)
+func (base *BaseFetch) Get(urlReq *Request) ([]byte, error) {
+	resp, err := http.Get(urlReq.Url)
 	if err != nil {
 		log.Errorf("BaseFetch Get url error: %v", err)
 		return nil, err
