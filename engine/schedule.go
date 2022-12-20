@@ -38,7 +38,11 @@ func (se *ScheduleEngine) Run() {
 }
 
 func (se *ScheduleEngine) Schedule() {
-	var reqQueue = se.Seeds
+	var reqQueue []*collect.Request
+	for _, seed := range se.Seeds {
+		seed.RootReq.Task = seed
+		reqQueue = append(reqQueue, seed.RootReq)
+	}
 	go func() {
 		for {
 			var req *collect.Request
@@ -60,12 +64,17 @@ func (se *ScheduleEngine) Schedule() {
 func (se *ScheduleEngine) CreateWorker() {
 	for {
 		r := <-se.workerCh
+		// 发送请求之前判断是否超过限制
+		if err := r.Check(); err != nil {
+			se.Logger.Error("request check failed", zap.Error(err))
+			continue
+		}
 		body, err := se.Fetcher.Get(r)
 		if err != nil {
 			se.Logger.Error("can't fetch", zap.Error(err))
 			continue
 		}
-		result := r.ParseFunc(body)
+		result := r.ParseFunc(body, r)
 		se.out <- result
 
 	}

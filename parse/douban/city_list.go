@@ -4,18 +4,27 @@ import (
 	"regexp"
 
 	"github.com/jjeejj/go-crawler/collect"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 var cityListRegex *regexp.Regexp = regexp.MustCompile("https://www.douban.com/group/topic/[0-9]+/")
 
-func ParseUrl(content []byte) collect.ParseResult {
+func ParseUrl(content []byte, req *collect.Request) collect.ParseResult {
 	matches := cityListRegex.FindAllSubmatch(content, -1)
 	result := collect.ParseResult{}
-	log.Infof("matches: %v", matches)
-	// for _, m := range matches {
-
-	// }
+	// log.Infof("matches: %v", string(matches))
+	for _, m := range matches {
+		req.Task.Logger.Info("matches:", zap.ByteStrings("m", m))
+		u := string(m[0])
+		result.Requests = append(result.Requests, &collect.Request{
+			Url:   u,
+			Depth: req.Depth + 1,
+			ParseFunc: func(c []byte, req *collect.Request) collect.ParseResult {
+				return GetContentUrl(c, u)
+			},
+			Task: req.Task,
+		})
+	}
 	return result
 }
 

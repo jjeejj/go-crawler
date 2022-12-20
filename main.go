@@ -24,18 +24,24 @@ func main() {
 		logger.Error("RoundRobinProxy failed: ", zap.Error(err))
 		panic(err)
 	}
-
-	var seeds []*collect.Request
-	for i := 0; i <= 25; i += 25 {
-		url := fmt.Sprintf("https://www.douban.com/group/szsh/discussion?start=%d", i)
-		seeds = append(seeds, &collect.Request{
-			Url:       url,
-			ParseFunc: douban.ParseUrl,
-		})
-	}
 	var f collect.Fetcher = &collect.BrowserFetch{
 		Timeout: time.Second * 3,
 		Proxy:   p,
+	}
+	var seeds []*collect.Task
+	for i := 0; i <= 25; i += 25 {
+		url := fmt.Sprintf("https://www.douban.com/group/szsh/discussion?start=%d", i)
+		seeds = append(seeds, &collect.Task{
+			Url:      url,
+			MaxDepth: 5,
+			WaitTime: 1 * time.Second,
+			RootReq: &collect.Request{
+				ParseFunc: douban.ParseUrl,
+				Depth:     1,
+				Url:       url,
+			},
+			Logger: logger,
+		})
 	}
 	se := engine.NewScheduleEngine(
 		engine.WithSeeds(seeds),

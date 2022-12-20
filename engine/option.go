@@ -8,7 +8,7 @@ import (
 type options struct {
 	WorkerCount int
 	Logger      *zap.Logger
-	Seeds       []*collect.Request
+	Seeds       []*collect.Task
 	Fetcher     collect.Fetcher
 }
 
@@ -36,7 +36,7 @@ func WithWorkerCount(count int) Option {
 	}
 }
 
-func WithSeeds(seeds []*collect.Request) Option {
+func WithSeeds(seeds []*collect.Task) Option {
 	return func(opt *options) {
 		opt.Seeds = seeds
 	}

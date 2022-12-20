@@ -27,8 +27,8 @@ func (browser *BrowserFetch) Get(urlReq *Request) ([]byte, error) {
 		log.Errorf("BrowserFetch new request err: %v", err)
 		return nil, err
 	}
-	if urlReq.Cookie != "" {
-		req.Header.Set("Cookie", urlReq.Cookie)
+	if urlReq.Task.Cookie != "" {
+		req.Header.Set("Cookie", urlReq.Task.Cookie)
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15")
 	resp, err := client.Do(req)
