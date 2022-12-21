@@ -22,10 +22,10 @@ func NewDefaultSchedule() *DefaultSchedule {
 }
 
 func (s *DefaultSchedule) Schedule() {
+	var req *collect.Request
+	var ch chan *collect.Request
 	go func() {
 		for {
-			var req *collect.Request
-			var ch chan *collect.Request
 			if len(s.reqQueue) > 0 {
 				req = s.reqQueue[0]
 				s.reqQueue = s.reqQueue[1:]
