@@ -1,14 +1,18 @@
 package engine
 
 import (
+	"sync"
+
 	"github.com/jjeejj/go-crawler/collect"
 	"go.uber.org/zap"
 )
 
 // Crawler 爬虫引擎实例
 type Crawler struct {
-	out     chan collect.ParseResult // 结果
-	options                          // 引擎实例的配置项
+	out            chan collect.ParseResult // 结果
+	options                                 // 引擎实例的配置项
+	VisitedMap     map[string]bool          // 已经爬取过的地址map
+	VisitedMapLock sync.Mutex
 }
 
 // Scheduler 调度的接口定义
@@ -26,6 +30,7 @@ func NewEngine(opts ...Option) *Crawler {
 	engine := &Crawler{}
 	engine.options = options
 	engine.out = make(chan collect.ParseResult)
+	engine.VisitedMap = make(map[string]bool, 100)
 	return engine
 }
 
@@ -56,6 +61,11 @@ func (crawler *Crawler) CreateWorker() {
 			crawler.Logger.Error("request check failed", zap.Error(err))
 			continue
 		}
+		// 判断之前没有访问过
+		if crawler.HasVisited(r) {
+			crawler.Logger.Debug("request has visit", zap.String("url:", r.Url))
+			continue
+		}
 		body, err := crawler.Fetcher.Get(r)
 		if err != nil {
 			crawler.Logger.Error("can't fetch", zap.Error(err))
@@ -67,6 +77,7 @@ func (crawler *Crawler) CreateWorker() {
 		}
 		crawler.out <- result
 
+		crawler.StoreVisited(r)
 	}
 }
 
@@ -78,5 +89,22 @@ func (crawler *Crawler) HandleResult() {
 				crawler.Logger.Sugar().Info("get request", item)
 			}
 		}
+	}
+}
+
+// HasVisited 判断请求是否处理过
+func (crawler *Crawler) HasVisited(req *collect.Request) bool {
+	crawler.VisitedMapLock.Lock()
+	defer crawler.VisitedMapLock.Unlock()
+	unique := req.Unique()
+	return crawler.VisitedMap[unique]
+}
+
+func (crawler *Crawler) StoreVisited(reqs ...*collect.Request) {
+	crawler.VisitedMapLock.Lock()
+	defer crawler.VisitedMapLock.Unlock()
+	for _, req := range reqs {
+		unique := req.Unique()
+		crawler.VisitedMap[unique] = true
 	}
 }
