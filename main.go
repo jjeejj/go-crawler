@@ -43,11 +43,12 @@ func main() {
 			Logger: logger,
 		})
 	}
-	se := engine.NewScheduleEngine(
+	se := engine.NewEngine(
 		engine.WithSeeds(seeds),
 		engine.WithFetcher(f),
 		engine.WithWorkerCount(5),
 		engine.WithLogger(logger),
+		engine.WithScheduler(engine.NewDefaultSchedule()),
 	)
 	se.Run()
 	// 广度优先
